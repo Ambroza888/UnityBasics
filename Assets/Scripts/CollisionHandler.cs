@@ -4,18 +4,48 @@ using UnityEngine.SceneManagement;
 public class CollisionHandler : MonoBehaviour
 {
     [SerializeField] float levelLoadDelay = 2f;
-     private void OnCollisionEnter(Collision other) 
+    [SerializeField] AudioClip success;
+    [SerializeField] AudioClip crash;
+    [SerializeField] ParticleSystem successParticles;
+    [SerializeField] ParticleSystem crashParticles;
+
+    AudioSource audioSource;
+    bool isTransitioning = false;
+    bool collisionDisabled = false;
+
+    void Start() 
+    {
+        audioSource = GetComponent<AudioSource>();
+    }
+
+    void Update() 
+    {
+        RespondeToDebugKeys();
+    }
+
+    void RespondeToDebugKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            LoadNextLevel();
+        }
+        else if (Input.GetKeyDown(KeyCode.C))
+        {
+            collisionDisabled = !collisionDisabled;
+        }
+    }
+
+    void OnCollisionEnter(Collision other) 
      {
+         if (isTransitioning || collisionDisabled) { return; }
+         
           switch (other.gameObject.tag)
           {
-            case "Friendly":
+            case "Friendly": 
                 Debug.Log("This thing is Friendly");
                 break;
             case "Finish":
                 StartSuccessSequence();
-                break;
-            case "Fuel":
-                Debug.Log("yOU PICKED UP FUEL");
                 break;
             default:
                 StartCrashSequense();
@@ -25,12 +55,20 @@ public class CollisionHandler : MonoBehaviour
 
     private void StartSuccessSequence()
     {
+        isTransitioning = true;
+        audioSource.Stop();
+        audioSource.PlayOneShot(success);
+        successParticles.Play();
         GetComponent<Movement>().enabled = false;
         Invoke("LoadNextLevel", levelLoadDelay);
     }
 
     void StartCrashSequense()
     {
+        isTransitioning = true;
+        audioSource.Stop();
+        audioSource.PlayOneShot(crash);
+        crashParticles.Play();
         GetComponent<Movement>().enabled = false;
         Invoke("ReloadLevel", levelLoadDelay);
     }
